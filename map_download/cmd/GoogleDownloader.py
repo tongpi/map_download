@@ -51,6 +51,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
 
 class GoogleDownloadEngine(DownloadEngine):
     root_dir = ''
+    URL = "http://mt{s}.google.cn/maps/vt?lyrs=y@194&hl=zh-CN&gl=cn&x={x}&y={y}&z={z}"
 
     def __init__(self, root_dir, bbox, thread_num, logger=None, write_db=False):
         super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)

@@ -54,6 +54,7 @@ class TDTDownloaderThread(BaseDownloaderThread):
 
 class TDTDownloadEngine(DownloadEngine):
     root_dir = ''
+    URL = 'http://t%s.tianditu.gov.cn/DataServer?T=cva_c&tk=997487c2aa6dc93d84169f293ae2073d&x={x}&y={y}&l={z}'
 
     def __init__(self, root_dir, bbox, thread_num, logger=None, write_db=False):
         super(TDTDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)
@@ -67,7 +68,7 @@ class TDTDownloadEngine(DownloadEngine):
     def generate_metadata(self):
         try:
             bounds = '%d %d %d %d' % (self.bbox.min_lng, self.bbox.min_lat, self.bbox.max_lng, self.bbox.max_lat)
-            metadatas = {'attribution': 'http://t%s.tianditu.cn/DataServer?T=img_w&X={x}&Y={y}&L={z}',
+            metadatas = {'attribution': self.URL,
                          'bounds': bounds,
                          'description': 'TiandituDowmloader',
                          'format': 'png',
