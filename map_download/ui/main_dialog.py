@@ -9,10 +9,10 @@
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QDialog
 from PyQt5.QtCore import QSettings
 
-from LiGlobal.tool.downloader.ui.ui_dialog import *
-from LiGlobal.tool.downloader.cmd.GoogleDownloader import *
-from LiGlobal.tool.downloader.cmd.TDTDownloader import *
-from LiGlobal.tool.downloader.cmd.TerrainDownloader import *
+from map_download.ui.ui_dialog import *
+from map_download.cmd.GoogleDownloader import *
+from map_download.cmd.TDTDownloader import *
+from map_download.cmd.TerrainDownloader import *
 
 
 ROOT_DIR = 'ROOT_DIR'

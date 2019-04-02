@@ -3,7 +3,7 @@
 
 import os, math, logging, random, requests, time, json
 
-from LiGlobal.tool.downloader.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_google, BoundBox
+from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_google, BoundBox
 
 
 class GoogleDownloaderThread(BaseDownloaderThread):

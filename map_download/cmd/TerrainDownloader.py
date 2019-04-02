@@ -4,7 +4,7 @@
 
 import os, math, logging, requests, time
 
-from LiGlobal.tool.downloader.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_terrain, BoundBox
+from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_terrain, BoundBox
 
 
 

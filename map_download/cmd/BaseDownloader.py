@@ -8,7 +8,8 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from LiGlobal.tool.downloader.cmd.model import *
+from map_download.cmd.model import *
+
 
 def latlng2tile_google(lat_deg, lng_deg, z):
     """
