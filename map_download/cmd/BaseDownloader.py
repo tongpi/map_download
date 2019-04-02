@@ -157,19 +157,19 @@ class BaseDownloaderThread(QThread):
     def __del__(self):
         self.wait()
         if self.write_db:
-            self.session.commit()
+            self.commit()
             self.session.close()
 
     def stop(self):
         self.stopped = True
         if self.write_db:
-            self.session.commit()
+            self.commit()
 
     def pause(self):
         if self.isRunning():
             self.running = not self.running
         if self.write_db:
-            self.session.commit()
+            self.commit()
 
     def run(self):
         try:
@@ -192,14 +192,14 @@ class BaseDownloaderThread(QThread):
                     self.sub_progressBar_updated_signal.emit()
                 if self.stopped:
                     if self.write_db:
-                        self.session.commit()
+                        self.commit()
                     break
             if self.write_db:
-                self.session.commit()
+                self.commit()
                 self.session.close()
         except Exception as e:
             if self.write_db:
-                self.session.commit()
+                self.commit()
                 self.session.close()
             if self.logger is not None:
                 self.logger.error(e)
@@ -231,8 +231,16 @@ class BaseDownloaderThread(QThread):
         self.session.add(tile)
         self.num += 1
         if self.num % 100 == 0:
-            self.session.commit()
+            self.commit()
         return 1
+
+    def commit(self):
+        try:
+            self.session.commit()
+        except Exception as e:
+            QThread.sleep(10)
+            if self.logger:
+                self.logger.error(e)
 
 
 class DownloadEngine(QThread):
