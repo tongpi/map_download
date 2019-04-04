@@ -22,7 +22,7 @@ class TDTDownloaderThread(BaseDownloaderThread):
         file_path = '%s/%s/%i/%i/%i.%s' % (self.root_dir, 'tianditu', z+1, x, y, 'png')
         if os.path.exists(file_path):
             self._data2DB(x, y, z, file_path)
-            return 0    # 已存在
+            return 0    # exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         resp = None
         requre_count = 0
@@ -38,7 +38,7 @@ class TDTDownloaderThread(BaseDownloaderThread):
                 time.sleep(3)
             requre_count += 1
         if resp is None:
-            return -1  # 失败
+            return -1  # fail
         if resp.status_code != 200:
             return -1
         try:

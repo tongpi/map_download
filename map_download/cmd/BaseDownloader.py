@@ -62,9 +62,9 @@ def latlng2tile_terrain(lat_deg, lng_deg, z):
 
 
 class BoundBox(object):
-    '''
-    地图数据（包括影像和地形） bound box，包括 z 范围
-    '''
+    """
+    map data bbox
+    """
     max_lat = 0.0
     max_lng = 0.0
     min_lat = 0.0
@@ -121,6 +121,9 @@ class BoundBox(object):
 
 
 class BaseDownloaderThread(QThread):
+    """
+    download thread , get job from Queue, and download ( and write to database)
+    """
     root_dir = ''
     bbox = None
     logger = None
@@ -206,15 +209,23 @@ class BaseDownloaderThread(QThread):
 
     def _download(self, x, y, z):
         """
-        下载
+        download
         :param x:
         :param y:
         :param z:
-        :return: 0 已存在 -1 失败 1 成功
+        :return: 0 exists -1 fail 1 success
         """
         pass
 
     def _data2DB(self, x, y, z, file):
+        """
+        写入数据库
+        :param x:
+        :param y:
+        :param z:
+        :param file:  file path
+        :return: 0 no need to write or exists -1 fail 1 success
+        """
         if not self.write_db:
             return 0
         if not file or not os.path.exists(file):
@@ -235,6 +246,10 @@ class BaseDownloaderThread(QThread):
         return 1
 
     def commit(self):
+        """
+        sqlite commit, avoid sqlite commit lock
+        :return:
+        """
         try:
             self.session.commit()
         except Exception as e:
@@ -244,6 +259,9 @@ class BaseDownloaderThread(QThread):
 
 
 class DownloadEngine(QThread):
+    """
+    download engine thread, calculate download job and start download thread
+    """
     bbox = None
     logger = None
 

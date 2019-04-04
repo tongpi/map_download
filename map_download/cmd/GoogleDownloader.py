@@ -20,7 +20,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
         file_path = '%s/%s/%i/%i/%i.%s' % (self.root_dir, 'Google', z, x, y, 'jpg')
         if os.path.exists(file_path):
             self._data2DB(x, y, z, file_path)
-            return 0    # 已存在
+            return 0
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         resp = None
         requre_count = 0
@@ -35,7 +35,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
                 time.sleep(3)
             requre_count += 1
         if resp is None:
-            return -1  # 失败
+            return -1
         if resp.status_code != 200:
             return -1
         try:
