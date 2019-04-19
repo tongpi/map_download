@@ -18,5 +18,12 @@ class Tiles(BaseModel):
   )
 ```
 
+## 使用
+- 确保 python3 环境
+- 安装三方库 `pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt`
+- 安装本库 `python setup.py develop`
+- 运行 `python run.py`
+
+
 ### 觉得好用的话记得给个 Star 啊
 ### 有问题欢迎提 issue 啊
