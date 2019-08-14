@@ -50,9 +50,7 @@ class MainDialog(QDialog):
         self.init_access_token()
 
     def init_access_token(self):
-        self.__ui.edit_access_token.setText('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwMWUwZGNmZi04ZDUzLTQzOTctO'
-                                            'WE0Mi0yNWU1NjE2YWJmYzAiLCJpZCI6MzUxMCwiaWF0IjoxNTM3ODc3NTE3fQ.T18eFga9kBsC'
-                                            'PvoDNh0nj-wmN442uG1D13nLguknJ9A')
+        self.__ui.edit_access_token.setText('your access token in cesium')
         self.__ui.widget_access_token.hide()
 
     def init_logger(self):
