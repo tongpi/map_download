@@ -19,6 +19,7 @@ class Tiles(BaseModel):
 ```
 
 ## 使用
+- 修改 map_download/ui/main_dialog.py 第 53 行 'your access token in cesium' 为你自己在 cesium 官网申请的 access token
 - 确保 python3 环境
 - 安装三方库 `pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt`
 - 安装本库 `python setup.py develop`
