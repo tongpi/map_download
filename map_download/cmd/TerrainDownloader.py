@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 #  coding=utf-8
-
-
+import json
 import os, math, logging, requests, time
 
 from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_terrain, BoundBox
-
 
 
 def get_access_token(token):
@@ -87,24 +85,191 @@ class TerrainDownloadEngine(DownloadEngine):
         self.root_dir = root_dir
         self.token = token
 
-    def bbox2xyz(self, z):
-        min_x, min_y = latlng2tile_terrain(self.bbox.min_lat, self.bbox.min_lng, z)
-        max_x, max_y = latlng2tile_terrain(self.bbox.max_lat, self.bbox.max_lng, z)
+    def bbox2xyz(self, bbox, z):
+        min_x, min_y = latlng2tile_terrain(bbox.min_lat, bbox.min_lng, z)
+        max_x, max_y = latlng2tile_terrain(bbox.max_lat, bbox.max_lng, z)
         return math.floor(min_x), math.floor(min_y), math.ceil(max_x) + 1, math.ceil(max_y) + 1
+
+    def generate_metadata(self):
+        try:
+            metadatas = {
+                "attribution": "© Analytical Graphics Inc., © CGIAR-CSI, Produced using Copernicus data and "
+                               "information funded by the European Union - EU-DEM layers",
+                "available": [
+                    [
+                        {
+                            "endX": 1,
+                            "endY": 0,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 3,
+                            "endY": 1,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 7,
+                            "endY": 3,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 15,
+                            "endY": 7,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 31,
+                            "endY": 15,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 63,
+                            "endY": 31,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 127,
+                            "endY": 63,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 255,
+                            "endY": 127,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 511,
+                            "endY": 255,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 1023,
+                            "endY": 511,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 2047,
+                            "endY": 1023,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                    [
+                        {
+                            "endX": 4095,
+                            "endY": 2047,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                            [
+                        {
+                            "endX": 8191,
+                            "endY": 4095,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                            [
+                        {
+                            "endX": 16383,
+                            "endY": 8191,
+                            "startX": 0,
+                            "startY": 0
+                        }
+                    ],
+                        [
+                            {
+                                "endX": 32767,
+                                "endY": 16383,
+                                "startX": 0,
+                                "startY": 0
+                            }
+                    ]
+                ],
+                "bounds": [-180, -90, 180, 90, ],
+                "description": "STK World Terrain Premium Tileset, v1.3. 10m - 30m resolution CONUS, 30m resolution "
+                               "SRTM between 60N and 60S, 30m Europe.   Minimum global coverage of 1000m.",
+                "extensions": ["watermask", "vertexnormals", "octvertexnormals", ],
+                "format": "quantized-mesh-1.0",
+                "maxzoom": 13,
+                "minzoom": 0,
+                "name": "world",
+                "projection": "EPSG:4326",
+                "scheme": "tms",
+                "tilejson": "2.1.0",
+                "tiles": ["{z}/{x}/{y}.terrain?v={version}", ],
+                "version": "1.31376.0"
+            }
+            _dir = os.path.join(self.root_dir, 'Terrain')
+            os.makedirs(_dir, exist_ok=True)
+            metadatas_path = os.path.join(_dir, 'layer.json')
+            with open(metadatas_path, 'w') as f:
+                json.dump(metadatas, f)
+        except Exception as e:
+            if self.logger is not None:
+                self.logger.exception(e)
 
     def run(self):
         try:
-            task_q = self.get_task_queue()
-            self.threads = []
-            self.division_done_signal.emit(task_q.qsize())
-            for i in range(self.thread_num):
-                thread = TerrainDownloaderThread(self.root_dir, self.bbox, self.token, task_q, self.logger, write_db=self.write_db)
-                thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
-                self.threads.append(thread)
-            for thread in self.threads:
-                thread.start()
-            for thread in self.threads:
-                thread.wait()
+            self.generate_metadata()
+            count = 0
+            bboxs = self.cut_bbox()
+            for bbox in bboxs:
+                _count = self.get_task_count(bbox)
+                count += _count
+            self.division_done_signal.emit(count)
+            for bbox in bboxs:
+                while True:
+                    if not self.running:
+                        time.sleep(0.01)
+                    else:
+                        break
+                task_q = self.get_task_queue(bbox)
+                self.threads = []
+                for i in range(self.thread_num):
+                    thread = TerrainDownloaderThread(self.root_dir, self.bbox, self.token, task_q, self.logger,
+                                                     write_db=self.write_db)
+                    thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
+                    self.threads.append(thread)
+                for thread in self.threads:
+                    thread.start()
+                for thread in self.threads:
+                    thread.wait()
+                for t in self.threads:
+                    t.stop()
+                    t.quit()
+                self.threads = []
             self.download_done_signal.emit()
         except Exception as e:
             if self.logger is not None:

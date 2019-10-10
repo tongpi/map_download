@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 #  coding=utf-8
+import time
 
 import math, queue
-
+import numpy as np
 import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from sqlalchemy import create_engine
@@ -21,7 +22,7 @@ def latlng2tile_google(lat_deg, lng_deg, z):
     :return:        Return two parameters as tile numbers in x axis and y axis
     """
     if lat_deg >= 85.05112877980659 or lat_deg <= -85.05112877980659:
-        raise Exception('wmts latitude error lat')
+        raise ValueError('wmts latitude error lat')
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** z
     x = ((lng_deg + 180.0) / 360.0 * n)
@@ -65,41 +66,25 @@ class BoundBox(object):
     """
     map data bbox
     """
-    max_lat = 0.0
-    max_lng = 0.0
-    min_lat = 0.0
-    min_lng = 0.0
-    start_zoom = 0
-    end_zoom = 0
-
     def __init__(self, max_lat, max_lng, min_lat, min_lng, start_zoom, end_zoom):
         if not self.check_lat(max_lat):
-            raise Exception('max latitude error')
-            return
+            raise ValueError('max latitude error')
         if not self.check_lat(min_lat):
-            raise Exception('min latitude error')
-            return
+            raise ValueError('min latitude error')
         if not self.check_lng(max_lng):
-            raise Exception('max longitude error')
-            return
+            raise ValueError('max longitude error')
         if not self.check_lng(min_lng):
-            raise Exception('min longitude error')
-            return
+            raise ValueError('min longitude error')
         if not self.check_zoom(start_zoom):
-            raise Exception('start zoom error')
-            return
+            raise ValueError('start zoom error')
         if not self.check_zoom(end_zoom):
-            raise Exception('end zoom error')
-            return
+            raise ValueError('end zoom error')
         if max_lng <= min_lng:
-            raise Exception('max or min latitude error')
-            return
+            raise ValueError('max or min latitude error')
         if max_lat <= min_lat:
-            raise Exception('max or min longitude error')
-            return
+            raise ValueError('max or min longitude error')
         if start_zoom > end_zoom:
-            raise Exception('error start or end zoom')
-            return
+            raise ValueError('error start or end zoom')
         self.max_lat = max_lat
         self.max_lng = max_lng
         self.min_lat = min_lat
@@ -142,7 +127,7 @@ class BaseDownloaderThread(QThread):
         self.logger = logger
         self.task_q = task_q
         if self.bbox is None:
-            raise Exception('bbox init error')
+            raise ValueError('bbox init error')
         self.write_db = write_db
         self.session = None
         self.num = 0
@@ -193,6 +178,8 @@ class BaseDownloaderThread(QThread):
                         if self.logger is not None:
                             self.logger.error('download %i %i %i ERROR' % (z, x, y))
                     self.sub_progressBar_updated_signal.emit()
+                else:
+                    time.sleep(0.01)
                 if self.stopped:
                     if self.write_db:
                         self.commit()
@@ -215,7 +202,7 @@ class BaseDownloaderThread(QThread):
         :param z:
         :return: 0 exists -1 fail 1 success
         """
-        pass
+        raise NotImplementedError
 
     def _data2DB(self, x, y, z, file):
         """
@@ -264,6 +251,7 @@ class DownloadEngine(QThread):
     """
     bbox = None
     logger = None
+    MAX_D = 4.0
 
     thread_num = 0
     threads = []
@@ -278,20 +266,47 @@ class DownloadEngine(QThread):
         self.logger = logger
         self.thread_num = int(thread_num)
         self.write_db = write_db
+        self.running = True
 
     def __del__(self):
         self.wait()
 
     def pause(self):
         if self.isRunning():
+            self.running = not self.running
             for t in self.threads:
                 t.pause()
 
-    def get_task_queue(self):
+    def cut_bbox(self):
+        """
+        防止 box 过大, 导致 queue 占用内存过多
+        :return:
+        """
+        if (self.bbox.max_lat - self.bbox.min_lat) * (self.bbox.max_lng - self.bbox.min_lng) <= self.MAX_D ** 2:
+            return [self.bbox, ]
+        bboxs = []
+        for lat in np.arange(self.bbox.min_lat, self.bbox.max_lat, self.MAX_D):
+            for lng in np.arange(self.bbox.min_lng, self.bbox.max_lng, self.MAX_D):
+                max_lat = min(self.bbox.max_lat, lat + self.MAX_D)
+                max_lng = min(self.bbox.max_lng, lng + self.MAX_D)
+                bbox = BoundBox(max_lat, max_lng, lat, lng, self.bbox.start_zoom, self.bbox.end_zoom)
+                bboxs.append(bbox)
+        return bboxs
+
+    def get_task_count(self, bbox):
+        count = 0
+        for z in range(bbox.start_zoom, bbox.end_zoom + 1):
+            min_x, min_y, max_x, max_y = self.bbox2xyz(bbox, z)
+            for x in range(min_x, max_x):
+                for y in range(min_y, max_y):
+                    count += 1
+        return count
+
+    def get_task_queue(self, bbox):
         try:
             task_q = queue.Queue()
-            for z in range(self.bbox.start_zoom, self.bbox.end_zoom + 1):
-                min_x, min_y, max_x, max_y = self.bbox2xyz(z)
+            for z in range(bbox.start_zoom, bbox.end_zoom + 1):
+                min_x, min_y, max_x, max_y = self.bbox2xyz(bbox, z)
                 for x in range(min_x, max_x):
                     for y in range(min_y, max_y):
                         task_q.put((x, y, z))
@@ -300,18 +315,17 @@ class DownloadEngine(QThread):
             if self.logger is not None:
                 self.logger.error(e)
 
-    def bbox2xyz(self, z):
-        return 0, 0, 0, 0
+    def bbox2xyz(self, bbox, z):
+        raise NotImplementedError
 
     def generate_metadata(self):
-        pass
+        raise NotImplementedError
 
     def sub_update_progressBar(self):
         self.progressBar_updated_signal.emit()
 
     def run(self):
-        print('DownloadEngine-run')
-        pass
+        raise NotImplementedError
 
     def terminate(self):
         for t in self.threads:

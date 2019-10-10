@@ -57,9 +57,9 @@ class GoogleDownloadEngine(DownloadEngine):
         super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)
         self.root_dir = root_dir
 
-    def bbox2xyz(self, z):
-        min_x, min_y = latlng2tile_google(self.bbox.max_lat, self.bbox.min_lng, z)
-        max_x, max_y = latlng2tile_google(self.bbox.min_lat, self.bbox.max_lng, z)
+    def bbox2xyz(self, bbox, z):
+        min_x, min_y = latlng2tile_google(bbox.max_lat, bbox.min_lng, z)
+        max_x, max_y = latlng2tile_google(bbox.min_lat, bbox.max_lng, z)
         return math.floor(min_x), math.floor(min_y), math.ceil(max_x), math.ceil(max_y)
 
     def generate_metadata(self):
@@ -84,17 +84,33 @@ class GoogleDownloadEngine(DownloadEngine):
     def run(self):
         try:
             self.generate_metadata()
-            task_q = self.get_task_queue()
-            self.threads = []
-            self.division_done_signal.emit(task_q.qsize())
-            for i in range(self.thread_num):
-                thread = GoogleDownloaderThread(self.root_dir, self.bbox, task_q, self.logger, write_db=self.write_db)
-                thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
-                self.threads.append(thread)
-            for thread in self.threads:
-                thread.start()
-            for thread in self.threads:
-                thread.wait()
+            count = 0
+            bboxs = self.cut_bbox()
+            for bbox in bboxs:
+                _count = self.get_task_count(bbox)
+                count += _count
+            self.division_done_signal.emit(count)
+            for bbox in bboxs:
+                while True:
+                    if not self.running:
+                        time.sleep(0.01)
+                    else:
+                        break
+                task_q = self.get_task_queue(bbox)
+                self.threads = []
+                for i in range(self.thread_num):
+                    thread = GoogleDownloaderThread(self.root_dir, self.bbox, task_q, self.logger,
+                                                    write_db=self.write_db)
+                    thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
+                    self.threads.append(thread)
+                for thread in self.threads:
+                    thread.start()
+                for thread in self.threads:
+                    thread.wait()
+                for t in self.threads:
+                    t.stop()
+                    t.quit()
+                self.threads = []
             self.download_done_signal.emit()
         except Exception as e:
             if self.logger is not None:
@@ -104,7 +120,7 @@ class GoogleDownloadEngine(DownloadEngine):
 if __name__ == '__main__':
     logger = logging.getLogger('down')
     try:
-        root = r'F:\xy\data\downloader2'
+        root = r'D:\temp'
         formatter = logging.Formatter('%(levelname)s-%(message)s')
         hdlr = logging.StreamHandler()
         log_file = os.path.join(root, 'down.log')
@@ -118,9 +134,9 @@ if __name__ == '__main__':
         min_lat = -85.0
         max_lat = 85.0
         start_zoom = 0
-        end_zoom = 5
+        end_zoom = 10
         bbox = BoundBox(max_lat, max_lng, min_lat, min_lng, start_zoom, end_zoom)
-        d = GoogleDownloadEngine(root, bbox, 4, logger)
+        d = GoogleDownloadEngine(root, bbox, 1, logger)
         d.start()
         time.sleep(10000)
         logger.error('main thread out')

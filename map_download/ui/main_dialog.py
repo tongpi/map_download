@@ -42,6 +42,10 @@ class MainDialog(QDialog):
         self.reset_state()
         self.init_connect()
 
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if hasattr(self.download_engine, 'threads'):
+            self.download_engine.terminate()
+
     def init_ui(self):
         self.__ui.thread_count_edit.setText('10')
         self.__ui.start_zoom_edit.setText('0')
@@ -132,6 +136,7 @@ class MainDialog(QDialog):
             self.download_engine.progressBar_updated_signal.connect(self.slot_progress_update)
             self.download_engine.download_done_signal.connect(self.slot_download_done)
             self.download_engine.start()
+            self.__ui.download_btn.setEnabled(False)
         else:
             if hasattr(self.download_engine, 'threads'):
                 self.download_engine.pause()
@@ -149,6 +154,7 @@ class MainDialog(QDialog):
 
     def slot_division_done(self, total):
         self.__ui.progress_bar.setMaximum(total)
+        self.__ui.download_btn.setEnabled(True)
 
     def slot_progress_update(self):
         self.count += 1

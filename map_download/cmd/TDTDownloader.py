@@ -8,29 +8,34 @@ from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread
 
 
 class TDTDownloaderThread(BaseDownloaderThread):
-    URL = 'http://t%s.tianditu.gov.cn/DataServer?T=cva_c&tk=997487c2aa6dc93d84169f293ae2073d&x={x}&y={y}&l={z}'
+    # 两个 url 均可用
+    # URL = 'http://t{s}.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk={token}'
 
-    def __init__(self, root_dir, bbox, task_q, logger=None, write_db=False):
+    URL = 'http://t{s}.tianditu.com/cia_w/wmts?service=WMTS&version=1.0.0&request=GetTile&tilematrix={z}&layer=cia&' \
+          'style=default&tilerow={y}&tilecol={x}&tilematrixset=w&format=tiles&tk={token}'
+
+    def __init__(self, root_dir, bbox, task_q, token=None, logger=None, write_db=False):
         super(TDTDownloaderThread, self).__init__(root_dir, bbox, task_q, logger, write_db=write_db, db_file_name='TDT.db')
+        self.token = '927189e42d80e95e48f39472387aacc6'
+        if token is not None:
+            self.token = token
 
     def get_url(self, x, y, z):
-        ti = random.randint(0, 7)
-        url = self.URL % ti
-        return url.format(x=x, y=y, z=z)
+        s = random.randint(1, 6)
+        return self.URL.format(s=s, x=x, y=y, z=z, token=self.token)
 
     def _download(self, x, y, z):
-        file_path = '%s/%s/%i/%i/%i.%s' % (self.root_dir, 'tianditu', z+1, x, y, 'png')
+        file_path = '%s/%s/%i/%i/%i.%s' % (self.root_dir, 'tianditu', z, x, y, 'png')
         if os.path.exists(file_path):
             self._data2DB(x, y, z, file_path)
-            return 0    # exists
+            return 0    # 已存在
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         resp = None
         requre_count = 0
-        _url = ''
         while True:
             if requre_count > 4: break
             try:
-                _url = self.get_url(x, y, z+1)
+                _url = self.get_url(x, y, z)
                 resp = requests.get(_url, stream=True, timeout=2)
                 break
             except Exception as e:
@@ -38,7 +43,7 @@ class TDTDownloaderThread(BaseDownloaderThread):
                 time.sleep(3)
             requre_count += 1
         if resp is None:
-            return -1  # fail
+            return -1  # 失败
         if resp.status_code != 200:
             return -1
         try:
@@ -59,15 +64,17 @@ class TDTDownloadEngine(DownloadEngine):
         super(TDTDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)
         self.root_dir = root_dir
 
-    def bbox2xyz(self, z):
-        min_x, min_y = latlng2tile_TD(self.bbox.max_lat, self.bbox.min_lng, z)
-        max_x, max_y = latlng2tile_TD(self.bbox.min_lat, self.bbox.max_lng, z)
-        return math.floor(min_x), math.floor(min_y), math.ceil(max_x)+1, math.ceil(max_y)+1
+    def bbox2xyz(self, bbox, z):
+        min_x, min_y = latlng2tile_TD(bbox.max_lat, bbox.min_lng, z)
+        max_x, max_y = latlng2tile_TD(bbox.min_lat, bbox.max_lng, z)
+        return math.floor(min_x), math.floor(min_y), math.ceil(max_x) + 1, math.ceil(max_y) + 1
 
     def generate_metadata(self):
         try:
             bounds = '%d %d %d %d' % (self.bbox.min_lng, self.bbox.min_lat, self.bbox.max_lng, self.bbox.max_lat)
-            metadatas = {'attribution': 'http://t%s.tianditu.cn/DataServer?T=img_w&X={x}&Y={y}&L={z}',
+            metadatas = {'attribution': 'http://t{s}.tianditu.com/cia_w/wmts?service=WMTS&version=1.0.0&'
+                                        'request=GetTile&tilematrix={z}&layer=cia&style=default&tilerow={x}&'
+                                        'tilecol={y}&tilematrixset=w&format=tiles&tk={token}',
                          'bounds': bounds,
                          'description': 'TiandituDowmloader',
                          'format': 'png',
@@ -76,7 +83,7 @@ class TDTDownloadEngine(DownloadEngine):
                          'version': 1.2}
             _dir = os.path.join(self.root_dir, 'tianditu')
             os.makedirs(_dir, exist_ok=True)
-            metadatas_path = os.path.join(self.root_dir, 'metadata.json')
+            metadatas_path = os.path.join(_dir, 'metadata.json')
             with open(metadatas_path, 'w') as f:
                 json.dump(metadatas, f)
         except Exception as e:
@@ -86,17 +93,33 @@ class TDTDownloadEngine(DownloadEngine):
     def run(self):
         try:
             self.generate_metadata()
-            task_q = self.get_task_queue()
-            self.threads = []
-            self.division_done_signal.emit(task_q.qsize())
-            for i in range(self.thread_num):
-                thread = TDTDownloaderThread(self.root_dir, self.bbox, task_q, self.logger, write_db=self.write_db)
-                thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
-                self.threads.append(thread)
-            for thread in self.threads:
-                thread.start()
-            for thread in self.threads:
-                thread.wait()
+            count = 0
+            bboxs = self.cut_bbox()
+            for bbox in bboxs:
+                _count = self.get_task_count(bbox)
+                count += _count
+            self.division_done_signal.emit(count)
+            for bbox in bboxs:
+                while True:
+                    if not self.running:
+                        time.sleep(0.01)
+                    else:
+                        break
+                task_q = self.get_task_queue(bbox)
+                self.threads = []
+                for i in range(self.thread_num):
+                    thread = TDTDownloaderThread(self.root_dir, self.bbox, task_q, logger=self.logger,
+                                                 write_db=self.write_db)
+                    thread.sub_progressBar_updated_signal.connect(self.sub_update_progressBar)
+                    self.threads.append(thread)
+                for thread in self.threads:
+                    thread.start()
+                for thread in self.threads:
+                    thread.wait()
+                for t in self.threads:
+                    t.stop()
+                    t.quit()
+                self.threads = []
             self.download_done_signal.emit()
         except Exception as e:
             if self.logger is not None:
