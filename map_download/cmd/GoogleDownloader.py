@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 #  coding=utf-8
-
-import os, math, logging, random, requests, time, json
+import json
+import os
+import math
+import logging
+import requests
+import time
+import random
 
 from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_google, BoundBox
 

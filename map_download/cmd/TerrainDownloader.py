@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 #  coding=utf-8
 import json
-import os, math, logging, requests, time
+import os
+import math
+import logging
+import requests
+import time
 
 from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread, latlng2tile_terrain, BoundBox
 

@@ -51,6 +51,11 @@ class MainDialog(QDialog):
         self.__ui.start_zoom_edit.setText('0')
         self.__ui.end_zoom_edit.setText('13')
         self.__ui.root_dir_edit.setText(self.setting.value(ROOT_DIR))
+        root_path = os.path.split(os.path.realpath(__file__))[0]
+        icon_path = '%s/downloader.ico' % root_path
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(icon_path), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setWindowIcon(icon)
         self.init_access_token()
 
     def init_access_token(self):

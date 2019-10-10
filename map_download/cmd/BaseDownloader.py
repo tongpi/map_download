@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 #  coding=utf-8
 import time
-
-import math, queue
+import queue
+import math
 import numpy as np
 import os
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -40,6 +40,8 @@ def latlng2tile_TD(lat_deg, lng_deg, zoom):
     zoom    -- map scale (0-18)
     Return two parameters as tile numbers in x axis and y axis
     """
+    if lat_deg >= 85.05112877980659 or lat_deg <= -85.05112877980659:
+        raise Exception('wmts latitude error lat')
     n = math.pow(2, int(zoom + 1))
     reg = 360.0 / n
     x = (lng_deg + 180.0) // reg
