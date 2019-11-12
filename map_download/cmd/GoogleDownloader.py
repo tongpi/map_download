@@ -12,10 +12,11 @@ from map_download.cmd.BaseDownloader import DownloadEngine, BaseDownloaderThread
 
 
 class GoogleDownloaderThread(BaseDownloaderThread):
-    URL = "http://mt{s}.google.cn/maps/vt?lyrs=y@194&hl=zh-CN&gl=cn&x={x}&y={y}&z={z}"
+    URL = "http://mt{s}.google.cn/vt?lyrs=s&hl=en-US&gl=US&x={x}&y={y}&z={z}"
 
     def __init__(self, root_dir, bbox, task_q, logger=None, write_db=False):
-        super(GoogleDownloaderThread, self).__init__(root_dir, bbox, task_q, logger, write_db=write_db, db_file_name='Google.db')
+        super(GoogleDownloaderThread, self).__init__(root_dir, bbox, task_q, logger, write_db=write_db,
+                                                     db_file_name='Google.db')
 
     def get_url(self, x, y, z):
         s = random.randint(1, 3)
@@ -56,7 +57,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
 
 class GoogleDownloadEngine(DownloadEngine):
     root_dir = ''
-    URL = "http://mt{s}.google.cn/maps/vt?lyrs=y@194&hl=zh-CN&gl=cn&x={x}&y={y}&z={z}"
+    URL = "http://mt{s}.google.cn/vt?lyrs=s&hl=en-US&gl=US&x={x}&y={y}&z={z}"
 
     def __init__(self, root_dir, bbox, thread_num, logger=None, write_db=False):
         super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)
