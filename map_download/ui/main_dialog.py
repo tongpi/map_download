@@ -1,9 +1,9 @@
-#!usr/bin/env python  
+#!usr/bin/env python
 # -*- coding:utf-8 _*-
-""" 
+"""
 @author:
-@file:  
-@time: 
+@file:
+@time:
 """
 
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QDialog
@@ -59,7 +59,7 @@ class MainDialog(QDialog):
         self.init_access_token()
 
     def init_access_token(self):
-        self.__ui.edit_access_token.setText('your access token in cesium')
+        self.__ui.edit_access_token.setText('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwMDZjZThjZS01MWNmLTQ1MmYtYWE2YS1lOWQzNDE2YzJlYTUiLCJpZCI6MTU3NjIsInNjb3BlcyI6WyJhc2wiLCJhc3IiLCJhc3ciLCJnYyJdLCJpYXQiOjE1NzU0MTk0NDN9.xF4jqzxy3ca0V_Nip-8QaL_c7r5cn1Jl5EuUqB2BZyE')
         self.__ui.widget_access_token.hide()
 
     def init_logger(self):
