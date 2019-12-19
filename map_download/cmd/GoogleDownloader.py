@@ -73,7 +73,7 @@ class GoogleDownloadEngine(DownloadEngine):
 
     def generate_metadata(self):
         try:
-            bounds = '%d %d %d %d' % (self.bbox.min_lng, self.bbox.min_lat, self.bbox.max_lng, self.bbox.max_lat)
+            bounds = '%d, %d, %d, %d' % (self.bbox.min_lng, self.bbox.min_lat, self.bbox.max_lng, self.bbox.max_lat)
             metadatas = {'attribution': self.URL,
                          'bounds': bounds,
                          'description': 'GoogleDowmloader',
