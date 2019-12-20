@@ -31,3 +31,22 @@ class Tiles(BaseModel):
 
 ### 觉得好用的话记得给个 Star 啊
 ### 有问题欢迎提 issue 啊
+
+## 工作流程及参考资料
+1、使用map_download工具下载google瓦片数据
+https://github.com/cugxy/map_download.git
+2、使用mbutil或tippecanoe生成mbtiles
+http://github.com/mapbox/mbutil.git
+3、使用geoserver生成发布mbtiles。需要先安装一个支持mbtiles的geoserver插件
+参考：https://blog.csdn.net/u013592964/article/details/53337968
+
+资料：
+https://blog.csdn.net/u013420816/article/details/83828134 栅格瓦片转mbtiles文件离线部署
+
+https://blog.csdn.net/u013323965/article/details/53213298 利用MBTiles技术原理减轻离线地图的存储量
+https://zhuanlan.zhihu.com/p/31185974 开源工具生成本地矢量瓦片
+python mb-util E:\ws\map\map_download\data\label-google-17\Google\ E:\ws\map\map_download\data\label-google-17\tianhe2.mbtiles --image_format=jpg
+
+https://blog.csdn.net/supermapsupport/article/details/72781962 MBTiles离线包生成和使用
+
+####  实验数据：1*1° 16级2G 17级4G 18级7G 19级google影像jpg格式13G 20级25G 21级50G
