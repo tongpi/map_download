@@ -14,8 +14,25 @@ class Tiles(BaseModel):
   tile_data = Column(LargeBinary)
   __table_args__ = (
       PrimaryKeyConstraint('zoom_level', 'tile_column', 'tile_row'),
-      Index('data_idx', 'zoom_level', 'tile_column', 'tile_row')
+      Index('tile_idx', 'zoom_level', 'tile_column', 'tile_row')
   )
+  
+class MetaData(BaseModel):
+    __tablename__ = 'metadata'
+    name = Column(Text)
+    value = Column(Text)
+    __table_args__ = (
+        PrimaryKeyConstraint('name'),
+        Index('name', 'name')
+    )
+
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        return '<name:%s, x:%s>' % (self.name, self.value)
+  
 ```
 
 ## 使用
@@ -28,3 +45,5 @@ class Tiles(BaseModel):
 
 ### 觉得好用的话记得给个 Star 啊
 ### 有问题欢迎提 issue 啊
+
+## 本库的修改在gds-dev分支上，主要修复了写数据库时未将元数据写入的问题以及tile_row的计算问题
