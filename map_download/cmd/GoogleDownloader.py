@@ -63,8 +63,8 @@ class GoogleDownloadEngine(DownloadEngine):
     URL = "http://mt{s}.google.cn/vt?lyrs=y@113&hl=zh-CN&gl=cn&x={x}&y={y}&z={z}"
 
     def __init__(self, root_dir, bbox, thread_num, logger=None, write_db=False):
-        super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db,root_dir = root_dir, db_file_name='Google.mbtiles')
-        # self.root_dir = root_dir
+        super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db, root_dir = root_dir, db_file_name='Google.mbtiles')
+        self.root_dir = root_dir
 
     def bbox2xyz(self, bbox, z):
         min_x, min_y = latlng2tile_google(bbox.max_lat, bbox.min_lng, z)
@@ -130,7 +130,8 @@ class GoogleDownloadEngine(DownloadEngine):
 if __name__ == '__main__':
     logger = logging.getLogger('down')
     try:
-        root = r'D:\temp'
+        # root = r'D:\temp'
+        root = r'E:\\ws\\map\\data'
         formatter = logging.Formatter('%(levelname)s-%(message)s')
         hdlr = logging.StreamHandler()
         log_file = os.path.join(root, 'down.log')
@@ -139,14 +140,14 @@ if __name__ == '__main__':
         logger.addHandler(file_hdlr)
         logger.addHandler(hdlr)
         logger.setLevel(logging.INFO)
-        min_lng = -180.0
-        max_lng = 180.0
-        min_lat = -85.0
-        max_lat = 85.0
+        min_lng = 75.0
+        max_lng = 135.0
+        min_lat = 4.0
+        max_lat = 55.0
         start_zoom = 0
         end_zoom = 10
         bbox = BoundBox(max_lat, max_lng, min_lat, min_lng, start_zoom, end_zoom)
-        d = GoogleDownloadEngine(root, bbox, 1, logger)
+        d = GoogleDownloadEngine(root, bbox, 16, logger,)
         d.start()
         time.sleep(10000)
         logger.error('main thread out')
