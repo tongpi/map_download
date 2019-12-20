@@ -18,7 +18,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
 
     def __init__(self, root_dir, bbox, task_q, logger=None, write_db=False):
         super(GoogleDownloaderThread, self).__init__(root_dir, bbox, task_q, logger, write_db=write_db,
-                                                     db_file_name='Google.db')
+                                                     db_file_name='Google.mbtiles')
 
     def get_url(self, x, y, z):
         s = random.randint(1, 3)
@@ -33,7 +33,7 @@ class GoogleDownloaderThread(BaseDownloaderThread):
         resp = None
         requre_count = 0
         while True:
-            if requre_count > 4: break
+            if requre_count > 10: break
             try:
                 _url = self.get_url(x, y, z)
                 resp = requests.get(_url, stream=True, timeout=2)
@@ -63,8 +63,8 @@ class GoogleDownloadEngine(DownloadEngine):
     URL = "http://mt{s}.google.cn/vt?lyrs=y@113&hl=zh-CN&gl=cn&x={x}&y={y}&z={z}"
 
     def __init__(self, root_dir, bbox, thread_num, logger=None, write_db=False):
-        super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db)
-        self.root_dir = root_dir
+        super(GoogleDownloadEngine, self).__init__(bbox, thread_num, logger, write_db=write_db,root_dir = root_dir, db_file_name='Google.mbtiles')
+        # self.root_dir = root_dir
 
     def bbox2xyz(self, bbox, z):
         min_x, min_y = latlng2tile_google(bbox.max_lat, bbox.min_lng, z)
@@ -81,6 +81,7 @@ class GoogleDownloadEngine(DownloadEngine):
                          'name': 'Google',
                          'type': 'baselayer',
                          'version': 1.2}
+            self._metadata2DB(metadatas)
             _dir = os.path.join(self.root_dir, 'Google')
             os.makedirs(_dir, exist_ok=True)
             metadatas_path = os.path.join(_dir, 'metadata.json')

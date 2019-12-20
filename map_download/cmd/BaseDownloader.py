@@ -142,7 +142,7 @@ class BaseDownloaderThread(QThread):
             engine = create_engine(engine_str, echo=False)
             Session = sessionmaker(bind=engine)
             self.session = Session()
-            BaseModel.metadata.create_all(engine)
+            # BaseModel.metadata.create_all(engine)
 
     def __del__(self):
         self.wait()
@@ -205,8 +205,7 @@ class BaseDownloaderThread(QThread):
         :return: 0 exists -1 fail 1 success
         """
         raise NotImplementedError
-
-    def _data2DB(self, x, y, z, file):
+    def _data2DB(self, x, yy, z, file):
         """
         写入数据库
         :param x:
@@ -215,6 +214,7 @@ class BaseDownloaderThread(QThread):
         :param file:  file path
         :return: 0 no need to write or exists -1 fail 1 success
         """
+        y = (2**z - 1) - yy
         if not self.write_db:
             return 0
         if not file or not os.path.exists(file):
@@ -262,13 +262,26 @@ class DownloadEngine(QThread):
     download_done_signal = pyqtSignal()
     progressBar_updated_signal = pyqtSignal()
 
-    def __init__(self, bbox, thread_num, logger=None, write_db=False):
+    def __init__(self, bbox, thread_num, logger=None, write_db=False, root_dir='', db_file_name='tile.db'):
         super(DownloadEngine, self).__init__()
         self.bbox = bbox
         self.logger = logger
         self.thread_num = int(thread_num)
         self.write_db = write_db
         self.running = True
+        self.root_dir= root_dir
+        self.db_file_name= db_file_name
+        self.session = None
+        if self.write_db:
+            file_path = '%s/%s' % (self.root_dir, db_file_name)
+            if not os.path.exists(file_path):
+                file = open(file_path, 'w')
+                file.close()
+            engine_str = 'sqlite:///%s' % (file_path, )
+            engine = create_engine(engine_str, echo=False)
+            Session = sessionmaker(bind=engine)
+            self.session = Session()
+            BaseModel.metadata.create_all(engine)
 
     def __del__(self):
         self.wait()
@@ -336,3 +349,28 @@ class DownloadEngine(QThread):
         self.threads = []
         super(DownloadEngine, self).terminate()
 
+    def _metadata2DB(self, metadata):
+        """
+        写入元数据
+        :param metadata:
+        :return: 0 no need to write or exists -1 fail 1 success
+        """
+        if not self.write_db:
+            return 0
+        for k, v in metadata.items():
+            row = MetaData(k, v)
+            self.session.add(row)
+        self.commit()
+        return 1
+
+    def commit(self):
+        """
+        sqlite commit, avoid sqlite commit lock
+        :return:
+        """
+        try:
+            self.session.commit()
+        except Exception as e:
+            QThread.sleep(10)
+            if self.logger:
+                self.logger.error(e)

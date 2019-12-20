@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Column, Integer, PrimaryKeyConstraint, LargeBinary, Index
+from sqlalchemy import Column, Integer, Text, PrimaryKeyConstraint, LargeBinary, Index
 from sqlalchemy.ext.declarative import declarative_base
 
 BaseModel = declarative_base()
@@ -14,7 +14,7 @@ class Tiles(BaseModel):
     tile_data = Column(LargeBinary)
     __table_args__ = (
         PrimaryKeyConstraint('zoom_level', 'tile_column', 'tile_row'),
-        Index('data_idx', 'zoom_level', 'tile_column', 'tile_row')
+        Index('tile_index', 'zoom_level', 'tile_column', 'tile_row')
     )
 
     def __init__(self, z, x, y):
@@ -24,3 +24,19 @@ class Tiles(BaseModel):
 
     def __repr__(self):
         return '<Tiles level:%s, x:%s, y:%s>' % (self.zoom_level, self.tile_column, self.tile_row)
+
+class MetaData(BaseModel):
+    __tablename__ = 'metadata'
+    name = Column(Text)
+    value = Column(Text)
+    __table_args__ = (
+        PrimaryKeyConstraint('name'),
+        Index('name', 'name')
+    )
+
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        return '<name:%s, x:%s>' % (self.name, self.value)
